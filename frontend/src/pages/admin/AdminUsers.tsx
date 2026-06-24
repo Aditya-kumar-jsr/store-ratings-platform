@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
-import api, { apiError } from '../../api/client';
 import { User } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import DataTable, { Column } from '../../components/DataTable';
 import Modal from '../../components/Modal';
 import AddUserForm from './AddUserForm';
+import { deleteUser, listUsers, updateUserRole } from '../../localStore';
 
 const roleLabels: Record<string, string> = {
   admin: 'Administrator',
@@ -30,10 +30,9 @@ export default function AdminUsers() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const res = await api.get('/users', { params: filters });
-      setUsers(res.data.users);
+      setUsers(listUsers(filters));
     } catch (err) {
-      setError(apiError(err));
+      setError(err instanceof Error ? err.message : 'Unable to load users.');
     }
   }, [filters]);
 
@@ -42,11 +41,10 @@ export default function AdminUsers() {
     setRoleSaving(true);
     setError('');
     try {
-      const res = await api.patch(`/users/${detail.id}/role`, { role: roleDraft });
-      setDetail(res.data.user);
+      setDetail(updateUserRole(detail.id, roleDraft));
       await load();
     } catch (err) {
-      setError(apiError(err));
+      setError(err instanceof Error ? err.message : 'Unable to update role.');
     } finally {
       setRoleSaving(false);
     }
@@ -56,10 +54,10 @@ export default function AdminUsers() {
     if (!window.confirm(`Delete user "${u.name}"? This also removes their ratings.`)) return;
     setError('');
     try {
-      await api.delete(`/users/${u.id}`);
+      deleteUser(u.id);
       await load();
     } catch (err) {
-      setError(apiError(err));
+      setError(err instanceof Error ? err.message : 'Unable to delete user.');
     }
   };
 
@@ -168,7 +166,6 @@ export default function AdminUsers() {
                 >
                   <option value="user">Normal User</option>
                   <option value="owner">Store Owner</option>
-                  <option value="admin">Administrator</option>
                 </select>
                 <button
                   className="btn btn-primary"

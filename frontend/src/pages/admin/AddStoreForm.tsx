@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import api, { apiError } from '../../api/client';
 import { User } from '../../types';
 import { validateName, validateEmail, validateAddress } from '../../utils/validation';
+import { createStore, listUsers } from '../../localStore';
 
 interface Props {
   onCreated: () => void;
@@ -16,12 +16,7 @@ export default function AddStoreForm({ onCreated, onClose }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    api
-      .get('/users')
-      .then((res) =>
-        setOwners(res.data.users.filter((u: User) => u.role === 'owner' || u.role === 'user')),
-      )
-      .catch(() => setOwners([]));
+    setOwners(listUsers().filter((u: User) => u.role === 'owner' || u.role === 'user'));
   }, []);
 
   const update =
@@ -45,7 +40,7 @@ export default function AddStoreForm({ onCreated, onClose }: Props) {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      await api.post('/stores', {
+      createStore({
         name: form.name,
         email: form.email,
         address: form.address,
@@ -54,7 +49,7 @@ export default function AddStoreForm({ onCreated, onClose }: Props) {
       onCreated();
       onClose();
     } catch (err) {
-      setServerError(apiError(err));
+      setServerError(err instanceof Error ? err.message : 'Unable to create store.');
     } finally {
       setSubmitting(false);
     }

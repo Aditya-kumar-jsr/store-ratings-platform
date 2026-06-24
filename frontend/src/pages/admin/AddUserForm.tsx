@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import api, { apiError } from '../../api/client';
 import { Role } from '../../types';
 import {
   validateName,
   validateEmail,
   validateAddress,
 } from '../../utils/validation';
+import { createUser } from '../../localStore';
 
 interface Props {
   onCreated: () => void;
@@ -44,11 +44,11 @@ export default function AddUserForm({ onCreated, onClose }: Props) {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      await api.post('/users', form);
+      createUser(form);
       onCreated();
       onClose();
     } catch (err) {
-      setServerError(apiError(err));
+      setServerError(err instanceof Error ? err.message : 'Unable to create user.');
     } finally {
       setSubmitting(false);
     }
@@ -76,7 +76,6 @@ export default function AddUserForm({ onCreated, onClose }: Props) {
         Role
         <select value={form.role} onChange={update('role')}>
           <option value="user">Normal User</option>
-          <option value="admin">Administrator</option>
           <option value="owner">Store Owner</option>
         </select>
       </label>

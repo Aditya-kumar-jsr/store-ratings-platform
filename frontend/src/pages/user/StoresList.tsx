@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
-import api, { apiError } from '../../api/client';
 import { Store } from '../../types';
 import StarRating from '../../components/StarRating';
+import { listStores, rateStore } from '../../localStore';
 
 export default function StoresList() {
   const [stores, setStores] = useState<Store[]>([]);
@@ -12,10 +12,9 @@ export default function StoresList() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const res = await api.get('/stores', { params: search });
-      setStores(res.data.stores);
+      setStores(listStores(search));
     } catch (err) {
-      setError(apiError(err));
+      setError(err instanceof Error ? err.message : 'Unable to load stores.');
     }
   }, [search]);
 
@@ -28,12 +27,11 @@ export default function StoresList() {
     setSavingId(storeId);
     setError('');
     try {
-      await api.post('/ratings', { storeId, rating });
-
+      rateStore(storeId, rating);
       setStores((prev) => prev.map((s) => (s.id === storeId ? { ...s, userRating: rating } : s)));
       await load();
     } catch (err) {
-      setError(apiError(err));
+      setError(err instanceof Error ? err.message : 'Unable to save rating.');
     } finally {
       setSavingId(null);
     }

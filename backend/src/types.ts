@@ -17,6 +17,7 @@ export interface AuthPayload {
   id: number;
   role: Role;
   email: string;
+  name?: string;
 }
 
 declare global {

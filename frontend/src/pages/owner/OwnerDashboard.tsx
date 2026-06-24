@@ -1,22 +1,26 @@
 import { useEffect, useState } from 'react';
-import api, { apiError } from '../../api/client';
 import { OwnerStore } from '../../types';
 import DataTable, { Column } from '../../components/DataTable';
+import { useAuth } from '../../context/AuthContext';
+import { ownerDashboard } from '../../localStore';
 
 type Rater = OwnerStore['raters'][number];
 
 export default function OwnerDashboard() {
+  const { user } = useAuth();
   const [stores, setStores] = useState<OwnerStore[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .get('/stores/owner/dashboard')
-      .then((res) => setStores(res.data.stores))
-      .catch((err) => setError(apiError(err)))
-      .finally(() => setLoading(false));
-  }, []);
+    try {
+      setStores(user ? ownerDashboard(user.id) : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load owner dashboard.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
   const columns: Column<Rater>[] = [
     { key: 'name', header: 'User' },

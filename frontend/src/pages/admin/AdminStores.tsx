@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
-import api, { apiError } from '../../api/client';
 import { Store } from '../../types';
 import DataTable, { Column } from '../../components/DataTable';
 import Modal from '../../components/Modal';
 import AddStoreForm from './AddStoreForm';
+import { deleteStore, listStores } from '../../localStore';
 
 export default function AdminStores() {
   const [stores, setStores] = useState<Store[]>([]);
@@ -14,10 +14,9 @@ export default function AdminStores() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const res = await api.get('/stores', { params: filters });
-      setStores(res.data.stores);
+      setStores(listStores(filters));
     } catch (err) {
-      setError(apiError(err));
+      setError(err instanceof Error ? err.message : 'Unable to load stores.');
     }
   }, [filters]);
 
@@ -33,10 +32,10 @@ export default function AdminStores() {
     if (!window.confirm(`Delete store "${s.name}"? This also removes its ratings.`)) return;
     setError('');
     try {
-      await api.delete(`/stores/${s.id}`);
+      deleteStore(s.id);
       await load();
     } catch (err) {
-      setError(apiError(err));
+      setError(err instanceof Error ? err.message : 'Unable to delete store.');
     }
   };
 

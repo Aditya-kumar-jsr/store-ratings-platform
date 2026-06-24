@@ -1,22 +1,11 @@
-import { useEffect, useState } from 'react';
-import api, { apiError } from '../../api/client';
-import { DashboardStats } from '../../types';
+import { dashboardStats } from '../../localStore';
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    api
-      .get('/users/dashboard')
-      .then((res) => setStats(res.data))
-      .catch((err) => setError(apiError(err)));
-  }, []);
+  const stats = dashboardStats();
 
   return (
     <div className="page">
       <h1>Admin dashboard</h1>
-      {error && <div className="alert error">{error}</div>}
       <div className="stat-grid">
         <div className="stat-card">
           <span className="stat-value">{stats?.totalUsers ?? '—'}</span>

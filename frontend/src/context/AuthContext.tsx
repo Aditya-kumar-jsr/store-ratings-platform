@@ -6,8 +6,13 @@ import {
   useCallback,
   ReactNode,
 } from 'react';
-import api from '../api/client';
+import { getCurrentUser, logoutLocal, upsertOAuthUser } from '../localStore';
 import { User } from '../types';
+
+type OAuthPayload = {
+  email?: string;
+  name?: string;
+};
 
 interface AuthState {
   user: User | null;
@@ -18,32 +23,38 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
+function decodeOAuthPayload(token: string): OAuthPayload {
+  const payload = token.split('.')[1];
+  if (!payload) return {};
+  const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+  return JSON.parse(window.atob(padded)) as OAuthPayload;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    api
-      .get('/auth/me')
-      .then((res) => setUser(res.data.user))
-      .catch(() => localStorage.removeItem('token'))
-      .finally(() => setLoading(false));
+    setUser(getCurrentUser());
+    setLoading(false);
   }, []);
 
   const completeOAuth = useCallback(async (token: string) => {
     localStorage.setItem('token', token);
-    const res = await api.get('/auth/me');
-    setUser(res.data.user);
-    return res.data.user as User;
+    const payload = decodeOAuthPayload(token);
+    if (!payload.email) throw new Error('OAuth token did not include an email.');
+    const nextUser = upsertOAuthUser({
+      email: payload.email,
+      name: payload.name ?? payload.email.split('@')[0],
+    });
+    setUser(nextUser);
+    return nextUser;
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem('token');
+    logoutLocal();
     setUser(null);
   }, []);
 
