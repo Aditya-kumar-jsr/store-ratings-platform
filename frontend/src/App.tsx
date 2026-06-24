@@ -3,8 +3,7 @@ import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
-import Signup from './pages/Signup';
-import ChangePassword from './pages/ChangePassword';
+import OAuthCallback from './pages/OAuthCallback';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminStores from './pages/admin/AdminStores';
@@ -24,18 +23,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
-
-      <Route
-        path="/change-password"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <ChangePassword />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/oauth/callback" element={<OAuthCallback />} />
 
       <Route
         path="/admin"

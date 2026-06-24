@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import bcrypt from 'bcryptjs';
 import { pool } from '../config/db';
 import { env } from '../config/env';
 
@@ -8,13 +7,11 @@ async function seed() {
   const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf-8');
   await pool.query(schema);
 
-  const hash = (pw: string) => bcrypt.hashSync(pw, 10);
-
   await pool.query(
     `INSERT INTO users (name, email, password, address, role)
      VALUES ($1, $2, $3, $4, 'admin')
      ON CONFLICT (email) DO NOTHING`,
-    [env.seedAdmin.name, env.seedAdmin.email, hash(env.seedAdmin.password), env.seedAdmin.address],
+    [env.seedAdmin.name, env.seedAdmin.email, null, env.seedAdmin.address],
   );
 
   const normalUsers = [
@@ -27,7 +24,7 @@ async function seed() {
       `INSERT INTO users (name, email, password, address, role)
        VALUES ($1, $2, $3, $4, 'user')
        ON CONFLICT (email) DO NOTHING`,
-      [name, email, hash('User@1234'), address],
+      [name, email, null, address],
     );
   }
 
@@ -42,7 +39,7 @@ async function seed() {
        VALUES ($1, $2, $3, $4, 'owner')
        ON CONFLICT (email) DO UPDATE SET role = 'owner'
        RETURNING id`,
-      [name, email, hash('Owner@1234'), address],
+      [name, email, null, address],
     );
     ownerIds.push(res.rows[0].id);
   }
@@ -87,9 +84,9 @@ async function seed() {
 
   console.log('Seed complete.');
 
-  console.log(`Admin login: ${env.seedAdmin.email} / ${env.seedAdmin.password}`);
-  console.log('Normal user: john.normal@example.com / User@1234');
-  console.log('Store owner: owner.greene@example.com / Owner@1234');
+  console.log(`Admin OAuth email: ${env.seedAdmin.email}`);
+  console.log('Normal user OAuth email: john.normal@example.com');
+  console.log('Store owner OAuth email: owner.greene@example.com');
   await pool.end();
 }
 

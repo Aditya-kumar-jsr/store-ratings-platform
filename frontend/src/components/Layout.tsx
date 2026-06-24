@@ -38,14 +38,6 @@ export default function Layout({ children }: { children: ReactNode }) {
               {l.label}
             </Link>
           ))}
-          {user && (
-            <Link
-              to="/change-password"
-              className={location.pathname === '/change-password' ? 'nav-link active' : 'nav-link'}
-            >
-              Change Password
-            </Link>
-          )}
         </nav>
         {user && (
           <div className="user-area">

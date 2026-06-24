@@ -4,7 +4,9 @@ export interface UserRecord {
   id: number;
   name: string;
   email: string;
-  password: string;
+  password: string | null;
+  oauth_provider?: string | null;
+  oauth_subject?: string | null;
   address: string;
   role: Role;
   created_at: string;

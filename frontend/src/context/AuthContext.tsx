@@ -12,13 +12,7 @@ import { User } from '../types';
 interface AuthState {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<User>;
-  signup: (data: {
-    name: string;
-    email: string;
-    address: string;
-    password: string;
-  }) => Promise<User>;
+  completeOAuth: (token: string) => Promise<User>;
   logout: () => void;
 }
 
@@ -41,22 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await api.post('/auth/login', { email, password });
-    localStorage.setItem('token', res.data.token);
+  const completeOAuth = useCallback(async (token: string) => {
+    localStorage.setItem('token', token);
+    const res = await api.get('/auth/me');
     setUser(res.data.user);
     return res.data.user as User;
   }, []);
-
-  const signup = useCallback(
-    async (data: { name: string; email: string; address: string; password: string }) => {
-      const res = await api.post('/auth/signup', data);
-      localStorage.setItem('token', res.data.token);
-      setUser(res.data.user);
-      return res.data.user as User;
-    },
-    [],
-  );
 
   const logout = useCallback(() => {
     localStorage.removeItem('token');
@@ -64,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, completeOAuth, logout }}>
       {children}
     </AuthContext.Provider>
   );

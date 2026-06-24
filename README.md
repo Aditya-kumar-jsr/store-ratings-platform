@@ -11,7 +11,7 @@ each with role-specific functionality.
 | Backend   | Express.js + TypeScript                       |
 | Database  | PostgreSQL (local for dev, Render-managed in prod) |
 | Frontend  | React + TypeScript (Vite)                     |
-| Auth      | JWT (bcrypt-hashed passwords)                 |
+| Auth      | Google OAuth + JWT sessions                   |
 | Hosting   | Render (API + Postgres + static site via `render.yaml`) |
 
 ## Project layout
@@ -67,6 +67,19 @@ npm run dev
 > `npm run seed` is idempotent — it applies the schema and inserts demo users,
 > stores and ratings. Use `npm run migrate` if you only want the schema.
 
+For Google OAuth, configure these backend variables:
+
+```bash
+GOOGLE_CLIENT_ID=your-google-oauth-client-id
+GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:4000/api/auth/google/callback
+API_PUBLIC_URL=http://localhost:4000
+CLIENT_ORIGIN=http://localhost:5173
+```
+
+In Google Cloud Console, add the redirect URI above for local development. For
+production, use your deployed API URL with `/api/auth/google/callback`.
+
 ### 2. Frontend
 
 ```bash
@@ -90,18 +103,18 @@ Render project. There is no separate database vendor and no Docker.
    `npm run start:prod`, which applies the schema, seeds the admin, then boots.
 4. After the first deploy, set the two cross-reference URLs:
    - API service → `CLIENT_ORIGIN` = the static site URL.
+   - API service → `API_PUBLIC_URL` = the API service URL.
+   - API service → `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+   - API service → `GOOGLE_REDIRECT_URI` = `<API URL>/api/auth/google/callback`.
    - Web service → `VITE_API_URL` = the API service URL, then redeploy the site.
 
 Locally the frontend talks to the API through the Vite proxy; in production it
 uses `VITE_API_URL`.
 
-## Demo accounts (created by the seed)
+## Seeded users
 
-| Role        | Email                        | Password    |
-| ----------- | ---------------------------- | ----------- |
-| Admin       | adityasingh112211@gmail.com  | Adity@123   |
-| Normal User | john.normal@example.com      | User@1234   |
-| Store Owner | owner.greene@example.com     | Owner@1234  |
+Seed data creates users and roles. Users sign in with Google OAuth using the
+same email address. Password login and signup are not exposed by the app.
 
 ## Roles & functionality
 
@@ -113,13 +126,13 @@ uses `VITE_API_URL`.
 - View full user details, including the store rating for owners.
 
 ### Normal User
-- Self sign-up and login; can change password.
+- Google OAuth sign-in.
 - Browse all stores; search by Name and Address.
 - See overall rating + their own submitted rating per store.
 - Submit and modify a rating (1–5).
 
 ### Store Owner
-- Login; can change password.
+- Google OAuth sign-in.
 - Dashboard: average store rating + list of users who rated the store.
 
 ## Form validation rules
@@ -128,7 +141,6 @@ Enforced on **both** client and server:
 
 - **Name** — required (no length limit).
 - **Address** — max 400 characters.
-- **Password** — 8–16 characters, ≥1 uppercase letter and ≥1 special character.
 - **Email** — standard email format.
 
 ## Notable design decisions
@@ -141,17 +153,16 @@ Enforced on **both** client and server:
 - **Filtering** — server-side `ILIKE` filters, debounced from the UI.
 - **Ratings** — a `UNIQUE (user_id, store_id)` constraint plus an upsert means
   "submit" and "modify" are the same idempotent operation.
-- **Security** — passwords hashed with bcrypt, JWT auth, `helmet`, CORS locked
+- **Security** — Google OAuth identity, JWT app sessions, `helmet`, CORS locked
   to the client origin, parameterized SQL throughout.
 
 ## API overview
 
 | Method | Endpoint                      | Role   | Purpose                              |
 | ------ | ----------------------------- | ------ | ------------------------------------ |
-| POST   | `/api/auth/signup`            | public | Normal-user registration             |
-| POST   | `/api/auth/login`             | public | Login                                |
+| GET    | `/api/auth/google`            | public | Start Google OAuth                   |
+| GET    | `/api/auth/google/callback`   | public | Complete Google OAuth                |
 | GET    | `/api/auth/me`                | any    | Current user                         |
-| PUT    | `/api/auth/password`          | any    | Change own password                  |
 | GET    | `/api/users/dashboard`        | admin  | Counts for the admin dashboard       |
 | GET    | `/api/users`                  | admin  | List/filter/sort users               |
 | GET    | `/api/users/:id`              | admin  | User details (rating if owner)       |

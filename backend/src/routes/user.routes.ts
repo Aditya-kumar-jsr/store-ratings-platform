@@ -7,7 +7,6 @@ import {
   nameRule,
   emailRule,
   addressRule,
-  passwordRule,
   roleRule,
   handleValidation,
 } from '../utils/validation';
@@ -22,7 +21,7 @@ router.get('/:id', asyncHandler(users.getUser));
 
 router.post(
   '/',
-  [nameRule(), emailRule(), addressRule(), passwordRule(), roleRule()],
+  [nameRule(), emailRule(), addressRule(), roleRule()],
   handleValidation,
   asyncHandler(users.createUser),
 );

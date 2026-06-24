@@ -5,7 +5,6 @@ import {
   validateName,
   validateEmail,
   validateAddress,
-  validatePassword,
 } from '../../utils/validation';
 
 interface Props {
@@ -18,7 +17,6 @@ export default function AddUserForm({ onCreated, onClose }: Props) {
     name: '',
     email: '',
     address: '',
-    password: '',
     role: 'user' as Role,
   });
   const [errors, setErrors] = useState<Record<string, string | null>>({});
@@ -35,7 +33,6 @@ export default function AddUserForm({ onCreated, onClose }: Props) {
       name: validateName(form.name),
       email: validateEmail(form.email),
       address: validateAddress(form.address),
-      password: validatePassword(form.password),
     };
     setErrors(next);
     return Object.values(next).every((v) => v === null);
@@ -76,12 +73,6 @@ export default function AddUserForm({ onCreated, onClose }: Props) {
         {errors.address && <span className="field-error">{errors.address}</span>}
       </label>
       <label>
-        Password
-        <input type="password" value={form.password} onChange={update('password')} />
-        <small className="hint">8–16 chars, one uppercase + one special character.</small>
-        {errors.password && <span className="field-error">{errors.password}</span>}
-      </label>
-      <label>
         Role
         <select value={form.role} onChange={update('role')}>
           <option value="user">Normal User</option>
@@ -91,7 +82,7 @@ export default function AddUserForm({ onCreated, onClose }: Props) {
       </label>
       <div className="row gap">
         <button className="btn btn-primary" disabled={submitting}>
-          {submitting ? 'Creating…' : 'Create user'}
+          {submitting ? 'Creating…' : 'Create OAuth user'}
         </button>
         <button type="button" className="btn btn-ghost" onClick={onClose}>
           Cancel

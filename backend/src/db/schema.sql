@@ -2,13 +2,23 @@ CREATE TABLE IF NOT EXISTS users (
   id          SERIAL PRIMARY KEY,
   name        TEXT         NOT NULL,
   email       VARCHAR(255) NOT NULL UNIQUE,
-  password    VARCHAR(255) NOT NULL,
+  password    VARCHAR(255),
+  oauth_provider VARCHAR(50),
+  oauth_subject  VARCHAR(255),
   address     VARCHAR(400) NOT NULL CHECK (char_length(address) <= 400),
   role        VARCHAR(20)  NOT NULL DEFAULT 'user'
                 CHECK (role IN ('admin', 'user', 'owner')),
   created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
+
+ALTER TABLE users ALTER COLUMN password DROP NOT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(50);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_subject VARCHAR(255);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_oauth_identity
+  ON users(oauth_provider, oauth_subject)
+  WHERE oauth_provider IS NOT NULL AND oauth_subject IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS stores (
   id          SERIAL PRIMARY KEY,

@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
 import { query } from '../config/db';
 import { UserRecord } from '../types';
 import { buildOrderBy } from '../utils/sort';
@@ -13,13 +12,12 @@ const USER_SORT_COLUMNS: Record<string, string> = {
 };
 
 export async function createUser(req: Request, res: Response) {
-  const { name, email, password, address, role } = req.body;
-  const hashed = await bcrypt.hash(password, 10);
+  const { name, email, address, role } = req.body;
   const { rows } = await query<UserRecord>(
     `INSERT INTO users (name, email, password, address, role)
-     VALUES ($1, $2, $3, $4, $5)
+     VALUES ($1, $2, NULL, $3, $4)
      RETURNING id, name, email, address, role, created_at`,
-    [name, email, hashed, address, role ?? 'user'],
+    [name, email, address, role ?? 'user'],
   );
   res.status(201).json({ user: rows[0] });
 }
