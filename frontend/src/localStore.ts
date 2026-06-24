@@ -287,6 +287,28 @@ export function createStore(input: Omit<Store, 'id' | 'overallRating' | 'ratingC
   return hydrateStore(nextDb, store);
 }
 
+export function updateStoreOwner(storeId: number, ownerId: number | null) {
+  const db = readDb();
+  if (ownerId && !db.users.some((user) => user.id === ownerId)) {
+    throw new Error('Selected owner was not found.');
+  }
+
+  const stores = db.stores.map((store) =>
+    store.id === storeId ? { ...store, ownerId } : store,
+  );
+  if (!stores.some((store) => store.id === storeId)) {
+    throw new Error('Store not found.');
+  }
+
+  const users = ownerId
+    ? db.users.map((user) => (user.id === ownerId ? { ...user, role: 'owner' as Role } : user))
+    : db.users;
+
+  writeDb({ ...db, users, stores });
+  const updatedStore = stores.find((store) => store.id === storeId)!;
+  return hydrateStore({ ...db, users, stores }, updatedStore);
+}
+
 export function deleteStore(id: number) {
   const db = readDb();
   writeDb({
