@@ -9,16 +9,18 @@ each with role-specific functionality.
 | Layer     | Technology                                   |
 | --------- | -------------------------------------------- |
 | Backend   | Express.js + TypeScript                       |
-| Database  | PostgreSQL (local for dev, Render-managed in prod) |
+| Database  | PostgreSQL                                         |
 | Frontend  | React + TypeScript (Vite)                     |
 | Auth      | Google OAuth + JWT sessions                   |
-| Hosting   | Render (API + Postgres + static site via `render.yaml`) |
+| Hosting   | Vercel frontend + Vercel serverless API       |
 
 ## Project layout
 
 ```
 .
-├── render.yaml
+├── api/
+│   └── index.ts
+├── vercel.json
 ├── backend/
 │   └── src/
 │       ├── config/
@@ -90,26 +92,47 @@ npm run dev
 
 The Vite dev server proxies `/api` to the backend, so no extra config is needed.
 
-## Deploying to Render
+## Deploying to Vercel
 
-The repo includes a `render.yaml` Blueprint that provisions everything — the
-**PostgreSQL database, the Express API, and the static React site** — in a single
-Render project. There is no separate database vendor and no Docker.
+The repo is configured for a single Vercel project. Vercel builds the React app
+from `frontend/` and serves the Express API through `api/index.ts`.
 
 1. Push the repo to GitHub.
-2. In Render: **New → Blueprint** and select the repo. Render reads `render.yaml`
-   and creates the database + both services.
-3. The API gets `DATABASE_URL` injected automatically and runs
-   `npm run start:prod`, which applies the schema, seeds the admin, then boots.
-4. After the first deploy, set the two cross-reference URLs:
-   - API service → `CLIENT_ORIGIN` = the static site URL.
-   - API service → `API_PUBLIC_URL` = the API service URL.
-   - API service → `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
-   - API service → `GOOGLE_REDIRECT_URI` = `<API URL>/api/auth/google/callback`.
-   - Web service → `VITE_API_URL` = the API service URL, then redeploy the site.
+2. Import the repo in Vercel.
+3. Keep the framework preset as **Other** if Vercel does not detect Vite
+   automatically. The included `vercel.json` provides the install, build and
+   output settings.
+4. Add a managed PostgreSQL connection string as `DATABASE_URL`.
+5. Add these environment variables in Vercel:
 
-Locally the frontend talks to the API through the Vite proxy; in production it
-uses `VITE_API_URL`.
+```bash
+DATABASE_URL=your-production-postgres-url
+CLIENT_ORIGIN=https://your-vercel-domain.vercel.app
+API_PUBLIC_URL=https://your-vercel-domain.vercel.app
+GOOGLE_CLIENT_ID=your-google-oauth-client-id
+GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
+GOOGLE_REDIRECT_URI=https://your-vercel-domain.vercel.app/api/auth/google/callback
+JWT_SECRET=use-a-long-random-production-secret
+JWT_EXPIRES_IN=7d
+SEED_ADMIN_NAME=Aditya Kumar Singh
+SEED_ADMIN_EMAIL=your-google-email@example.com
+SEED_ADMIN_ADDRESS=1 Admin Plaza, Head Office
+```
+
+6. In Google Cloud Console, add the same production URL:
+   - Authorized JavaScript origin: `https://your-vercel-domain.vercel.app`
+   - Authorized redirect URI:
+     `https://your-vercel-domain.vercel.app/api/auth/google/callback`
+7. After deployment, run the database seed once from your local machine against
+   the production `DATABASE_URL`:
+
+```bash
+cd backend
+DATABASE_URL="your-production-postgres-url" npm run seed
+```
+
+Locally the frontend talks to the API through the Vite proxy. In production the
+frontend and API share the same Vercel domain, so no `VITE_API_URL` is required.
 
 ## Seeded users
 
